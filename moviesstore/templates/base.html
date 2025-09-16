@@ -62,12 +62,9 @@
             <p><a class="nav-link" href="{% url 'home.about' %}">About</a></p>
             <p><a class="nav-link" href="{% url 'movies.index' %}">Movies</a></p>
             {% if user.is_authenticated %}
-            <a class="nav-link"
-              href="{% url 'accounts.orders' %}">Orders
-            </a>
-
-            <a class="nav-link"
-              href="{% url 'cart.index' %}">Cart</a>
+              <p><a class="nav-link" href="{% url 'accounts.orders' %}">Orders</a></p>
+              <p><a class="nav-link" href="{% url 'cart.index' %}">Cart</a></p>
+              <p><a class="nav-link" href="{% url 'accounts.subscription' %}">My Subscription</a></p>
               <p><a class="nav-link" href="{% url 'accounts.logout' %}">Logout ({{ user.username }})</a></p>
             {% else %}
               <p><a class="nav-link" href="{% url 'accounts.login' %}">Login</a></p>

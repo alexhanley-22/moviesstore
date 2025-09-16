@@ -34,9 +34,12 @@
 }
 
 .img-card-200 {
-  width: fit-content;
-  max-height: 200px;
+  width: 100%;          /* fill the card width */
+  height: 200px;        /* force a uniform height */
+  object-fit: cover;    /* crop instead of stretch */
+  border-radius: 8px;   /* optional, looks nicer */
 }
+
 
 .img-card-400 {
   width: fit-content;

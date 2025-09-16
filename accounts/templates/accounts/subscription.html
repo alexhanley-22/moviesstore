@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>My Subscription</h2>
+  <p><b>Total Spent:</b> ${{ template_data.total_spent }}</p>
+  <p><b>Subscription Level:</b> {{ template_data.level }}</p>
+</div>
+{% endblock %}
