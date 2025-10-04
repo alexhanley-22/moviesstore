@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <h1>{{ template_data.title }}</h1>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ template_data.petition.movie_title }}{% if template_data.petition.movie_year %} ({{ template_data.petition.movie_year }}){% endif %}</h5>
+                    <p class="card-text">{{ template_data.petition.description }}</p>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6>Vote Statistics</h6>
+                            <div class="d-flex gap-2">
+                                <span class="badge bg-success fs-6">{{ template_data.petition.vote_count }} Yes votes</span>
+                                <span class="badge bg-secondary fs-6">{{ template_data.petition.total_votes }} Total votes</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Your Vote</h6>
+                            {% if template_data.user_vote %}
+                                <span class="badge bg-{% if template_data.user_vote.vote_type == 'yes' %}success{% else %}danger{% endif %}">
+                                    You voted {{ template_data.user_vote.vote_type|title }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">You haven't voted yet</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if user.is_authenticated %}
+                        <div class="d-flex gap-2">
+                            <form method="post" action="{% url 'petitions.vote' template_data.petition.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="vote_type" value="yes">
+                                <button type="submit" class="btn btn-success">
+                                    {% if template_data.user_vote and template_data.user_vote.vote_type == 'yes' %}
+                                        Change to Yes
+                                    {% else %}
+                                        Vote Yes
+                                    {% endif %}
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'petitions.vote' template_data.petition.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="vote_type" value="no">
+                                <button type="submit" class="btn btn-danger">
+                                    {% if template_data.user_vote and template_data.user_vote.vote_type == 'no' %}
+                                        Change to No
+                                    {% else %}
+                                        Vote No
+                                    {% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Please <a href="{% url 'accounts.login' %}">log in</a> to vote on this petition.</p>
+                    {% endif %}
+                </div>
+                <div class="card-footer text-muted">
+                    Created by {{ template_data.petition.created_by.username }} on {{ template_data.petition.created_at|date:"M d, Y H:i" }}
+                </div>
+            </div>
+            
+            <div class="mt-3">
+                <a href="{% url 'petitions.index' %}" class="btn btn-secondary">Back to Petitions</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
