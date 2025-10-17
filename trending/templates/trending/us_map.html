@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Leaflet.js CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+
+<!-- Leaflet.js JavaScript -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h1>{{ template_data.title }}</h1>
+            
+            <!-- US Map -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">US Movie Trends Map</h5>
+                </div>
+                <div class="card-body">
+                    <div id="map" style="height: 500px; width: 100%;"></div>
+                    <div id="location-info" style="margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                        <div id="location-display" style="font-size: 14px;">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Initialize map when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Create map centered on US
+    const map = L.map('map').setView([39.8283, -98.5795], 4);
+    
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Request user location
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                
+                // Center map on user location
+                map.setView([lat, lng], 6);
+                
+                // Add blue circle around user location
+                L.circle([lat, lng], {
+                    color: 'blue',
+                    fillColor: 'blue',
+                    fillOpacity: 0.2,
+                    radius: 1000
+                }).addTo(map);
+                
+                // Add marker for user location
+                const marker = L.marker([lat, lng]).addTo(map);
+                marker.bindPopup('<b>Your Location</b><br>Lat: ' + lat.toFixed(4) + '<br>Lng: ' + lng.toFixed(4)).openPopup();
+                
+                // Update display
+                document.getElementById('location-display').innerHTML = `
+                    <strong>Your Location:</strong><br>
+                    Latitude: ${lat.toFixed(4)}<br>
+                    Longitude: ${lng.toFixed(4)}<br>
+                    <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" class="btn btn-sm btn-outline-primary mt-1">View on Google Maps</a>
+                `;
+            },
+            function(error) {
+                // Fallback to Atlanta if location denied
+                const fallbackLat = 33.7756;
+                const fallbackLng = -84.3963;
+                
+                map.setView([fallbackLat, fallbackLng], 6);
+                
+                const marker = L.marker([fallbackLat, fallbackLng]).addTo(map);
+                marker.bindPopup('<b>Default Location (Atlanta)</b><br>Lat: ' + fallbackLat + '<br>Lng: ' + fallbackLng).openPopup();
+                
+                document.getElementById('location-display').innerHTML = '<span style="color: red;">Location access denied. Showing default location.</span>';
+            }
+        );
+    } else {
+        document.getElementById('location-display').innerHTML = '<span style="color: red;">Geolocation not supported.</span>';
+    }
+});
+</script>
+
+{% endblock %}
