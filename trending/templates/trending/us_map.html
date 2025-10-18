@@ -11,6 +11,9 @@
      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
      crossorigin=""></script>
 
+<!-- Font Awesome for icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
 <div class="container">
     <div class="row">
         <div class="col-md-12">
@@ -28,6 +31,38 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- US Regions Information -->
+            <div class="row">
+                {% for region_name, region_data in template_data.regions.items %}
+                <div class="col-md-6 col-lg-3 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header" style="background-color: {{ region_data.color }}; color: white;">
+                            <h6 class="mb-0">🗺️ {{ region_name }}</h6>
+                        </div>
+                        <div class="card-body">
+                            {% for subregion_name, states in region_data.subregions.items %}
+                            <div class="mb-3">
+                                <button class="btn btn-link p-0 text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#{{ region_name|slugify }}-{{ subregion_name|slugify }}" aria-expanded="false" aria-controls="{{ region_name|slugify }}-{{ subregion_name|slugify }}">
+                                    <h6 class="text-muted mb-1 d-flex justify-content-between align-items-center">
+                                        {{ subregion_name }}
+                                        <i class="fas fa-chevron-down" style="font-size: 12px;"></i>
+                                    </h6>
+                                </button>
+                                <div class="collapse" id="{{ region_name|slugify }}-{{ subregion_name|slugify }}">
+                                    <ul class="list-unstyled small mt-2">
+                                        {% for state in states %}
+                                        <li>• {{ state }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
         </div>
     </div>
 </div>
@@ -42,6 +77,9 @@ document.addEventListener('DOMContentLoaded', function() {
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
+    
+    // Add regional markers
+    addRegionalMarkers(map);
     
     // Request user location
     if (navigator.geolocation) {
@@ -89,6 +127,80 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
         document.getElementById('location-display').innerHTML = '<span style="color: red;">Geolocation not supported.</span>';
     }
+});
+
+function addRegionalMarkers(map) {
+    // Regional center points and colors
+    const regions = [
+        {
+            name: 'Northeast',
+            lat: 42.1657,
+            lng: -74.9481,
+            color: '#FF6B6B',
+            states: ['Maine', 'New Hampshire', 'Vermont', 'Massachusetts', 'Rhode Island', 'Connecticut', 'New York', 'New Jersey', 'Pennsylvania']
+        },
+        {
+            name: 'Midwest',
+            lat: 41.8781,
+            lng: -87.6298,
+            color: '#4ECDC4',
+            states: ['Ohio', 'Indiana', 'Illinois', 'Michigan', 'Wisconsin', 'Minnesota', 'Iowa', 'Missouri', 'North Dakota', 'South Dakota', 'Nebraska', 'Kansas']
+        },
+        {
+            name: 'South',
+            lat: 33.4484,
+            lng: -86.7870,
+            color: '#45B7D1',
+            states: ['Delaware', 'Maryland', 'Virginia', 'West Virginia', 'North Carolina', 'South Carolina', 'Georgia', 'Florida', 'Kentucky', 'Tennessee', 'Mississippi', 'Alabama', 'Oklahoma', 'Texas', 'Arkansas', 'Louisiana']
+        },
+        {
+            name: 'West',
+            lat: 37.7749,
+            lng: -122.4194,
+            color: '#96CEB4',
+            states: ['Montana', 'Idaho', 'Wyoming', 'Nevada', 'Utah', 'Colorado', 'Arizona', 'New Mexico', 'Alaska', 'Washington', 'Oregon', 'California', 'Hawaii']
+        }
+    ];
+    
+    regions.forEach(region => {
+        // Create custom icon for each region
+        const regionIcon = L.divIcon({
+            className: 'region-marker',
+            html: `<div style="background-color: ${region.color}; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">${region.name.charAt(0)}</div>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+        
+        // Add marker to map
+        const marker = L.marker([region.lat, region.lng], { icon: regionIcon }).addTo(map);
+        
+        // Add popup with region information
+        marker.bindPopup(`
+            <div style="text-align: center;">
+                <h6 style="color: ${region.color}; margin-bottom: 10px;">🗺️ ${region.name}</h6>
+                <p style="font-size: 12px; margin: 0;">${region.states.length} states</p>
+                <small style="color: #666;">Click to explore trending movies in this region</small>
+            </div>
+        `);
+    });
+}
+
+// Handle dropdown chevron rotation
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners to all collapse buttons
+    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const target = document.querySelector(this.getAttribute('data-bs-target'));
+            const chevron = this.querySelector('.fas');
+            
+            // Toggle chevron rotation
+            if (target.classList.contains('show')) {
+                chevron.style.transform = 'rotate(0deg)';
+            } else {
+                chevron.style.transform = 'rotate(180deg)';
+            }
+        });
+    });
 });
 </script>
 
