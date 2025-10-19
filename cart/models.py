@@ -11,6 +11,9 @@ class Order(models.Model):
         on_delete=models.CASCADE)
     # Geographic data for US states
     state = models.CharField(max_length=50, default='Unknown')
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+
     
     def __str__(self):
         return str(self.id) + ' - ' + self.user.username

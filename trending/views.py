@@ -1,4 +1,6 @@
 from django.shortcuts import render
+from django.http import JsonResponse
+from cart.models import Order
 
 def us_trending_map(request):
     """Display US map with location services and regional data"""
@@ -42,3 +44,21 @@ def us_trending_map(request):
     }
     
     return render(request, 'trending/us_map.html', {'template_data': template_data})
+
+
+
+def order_locations_api(request):
+    """Return recent orders with location data for map plotting"""
+    orders = Order.objects.exclude(latitude=None).order_by('-date')[:100]
+    data = [
+        {
+            'lat': o.latitude,
+            'lng': o.longitude,
+            'state': o.state,
+            'user': o.user.username,
+            'total': o.total,
+            'date': o.date.strftime('%Y-%m-%d %H:%M')
+        }
+        for o in orders
+    ]
+    return JsonResponse(data, safe=False)

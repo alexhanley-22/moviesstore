@@ -41,12 +41,28 @@ def purchase(request):
     movie_ids = list(cart.keys())
     if (movie_ids == []):
         return redirect('cart.index')
+
     movies_in_cart = Movie.objects.filter(id__in=movie_ids)
     cart_total = calculate_cart_total(cart, movies_in_cart)
+
+    # Create the order
     order = Order()
     order.user = request.user
     order.total = cart_total
     order.save()
+
+    # ✅ Capture and save user location (from form or JS geolocation)
+    lat = request.POST.get('latitude')
+    lng = request.POST.get('longitude')
+    state = request.POST.get('state', 'Unknown')
+
+    if lat and lng:
+        order.latitude = float(lat)
+        order.longitude = float(lng)
+    order.state = state
+    order.save()
+
+    # Save ordered items
     for movie in movies_in_cart:
         item = Item()
         item.movie = movie
@@ -54,7 +70,10 @@ def purchase(request):
         item.order = order
         item.quantity = cart[str(movie.id)]
         item.save()
+
+    # Clear the cart
     request.session['cart'] = {}
+
     template_data = {}
     template_data['title'] = 'Purchase confirmation'
     template_data['order_id'] = order.id
