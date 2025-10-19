@@ -32,12 +32,112 @@
         </div>
       </div>
 
+      <div class = "row mt-4">
+        <div class = "col-md-4 mb-3">
+          <div class = "card h-100">
+            <div class = "card-header"> Your Recent Purchases</div>
+            <div class = "card-body small">
+              {% if template_data.recent_purchases and request.user.is_authenticated %}
+                {% for rp in template_data.recent_purchases %}
+                  <div class = "mb-2">
+                    <strong> Order #{{ rp.order.id }}</strong> - {{ rp.order.date|date:'Y-m-d H:i' }} - ${{ rp.order.total }}
+                    <ul class = "mb-1">
+                      {% for it in rp.items %}
+                        <li>{{ it.movie.name }} x {{ it.quantity }}<small class = "text-muted">(${% widthratio it.price 1 1 %})</small></li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                {% endfor %}
+              {% else %}
+              <p class = "text-muted"> No recent purchases or not logged in </p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class = "col-md-4 mb-3">
+          <div class = "card h-100">
+            <div class = "card-header"> Other Users' Recent Purchases</div>
+            <div class = "card-body small">
+              {% if request.user.is_authenticated %}
+              <form method = "get" id = "other-user-form">
+                <input type = "hidden" name = "region" value = "{{template_data.selected_region}}">
+                <div class = "mb-2">
+                  <select name = "other_user" class = "form-select form-select-sm" onchange="document.getElementById('other-user-form').submit()">
+                    <option value = ""> -- Select a user -- </option>
+                    {% for u in template_data.other_users %}
+                      <option value = "{{u.id}}" {% if template_data.selected_other_user and u.id == template_data.selected_other_user.id %}selected{% endif %}> {{ u.username }} </option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                {% if template_data.other_user_purchases %}
+                  {% for op in template_data.other_user_purchases %}
+                    <div class = "mb-2">
+                      <strong>{{ op.order.user.username }}</strong> - Order # {{op.order.id}} - ${{op.order.total}}
+                      <ul>
+                        {% for it in op.items %}
+                          <li>{{it.movie.name}} x {{it.quantity}}</li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                    {% endfor %}
+                  {% else %}
+                    <p class = "text-muted"> Select a user to view their recent purchases.</p>
+                  {% endif %}
+                </form>
+                {% else %}
+                  <p class = "text-muted"> Log in to view other users' recent purchases</p>
+                {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class = "col-md-4 mb-3">
+          <div class = "card h-100">
+            <div class = "card-header"> Region Trending Movies</div>
+            <div class = "card-body small">
+              <form method = "get" id = "region-form">
+                {% if template_data.selected_other_user %}
+                  <input type = "hidden" name = "other_user" value = "{{template_data.selected_other_user.id}}">
+                {% endif %}
+                <div class = "mb-2">
+                  <select name = "region" class = "form-select form-select-sm" onchange="document.getElementById('region-form').submit()">
+                    <option value = ""> -- Select region -- </option>
+                    {% for rname in template_data.regions.keys %}
+                      <option value = "{{ rname }}" {% if template_data.selected_region == rname %}selected{% endif %}> {{ rname }} </option>
+                    {% endfor %}
+                    </select>
+                  </div>
+                </form>
+
+                {% if template_data.selected_region %}
+                  <p class = "mb-2"><strong>{{template_data.selected_region}}</strong> - {{template_data.selected_region_state_count}} states</p>
+                  {% if template_data.region_trending %}
+                    <ol class = "mb-0">
+                      {% for t in template_data.region_trending %}
+                        <li>{{ t.movie.name }} <small class = "text-muted">({{t.count}} sold)</small></li>
+                      {% endfor %}
+                    </ol>
+                  {% else %}
+                    <p class = "text-muted"> There are no trending data for this region yet</p>
+                  {% endif %}
+                {% else %}
+                    <p class = "text-muted"> Select a region to view trending movies</p>
+                {% endif %}
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+
       <!-- Region Cards -->
       <div class="row">
         {% for region_name, region_data in template_data.regions.items %}
         <div class="col-md-6 col-lg-3 mb-4">
           <div class="card h-100">
-            <div class="card-header" style="background-color: {{ region_data.color }}; color: white;">
+            <div class="card-header region-header" data-region-color="{{ region_data.color }}">
               <h6 class="mb-0">🗺️ {{ region_name }}</h6>
             </div>
             <div class="card-body">
@@ -194,5 +294,18 @@ function addRegionalMarkers(map) {
     `);
   });
 }
+
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.region-header').forEach(function(el) {
+    const color = el.getAttribute('data-region-color');
+    if (color) {
+      el.style.backgroundColor = color;
+      el.style.color = 'white';
+    }
+  });
+});
+
 </script>
 {% endblock %}
