@@ -1,10 +1,10 @@
 from django.shortcuts import render
 from django.http import JsonResponse
-from cart.models import Order
+from cart.models import Order, Item
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from cart.models import Order  # adjust if your Order model is elsewhere
-from collections import defaultdict
+from django.contrib.auth.models import User
+from movies.models import Movie
+from collections import defaultdict, Counter
 
 def us_trending_map(request):
     """Display US map with location services and regional data"""
@@ -41,14 +41,82 @@ def us_trending_map(request):
             }
         }
     }
+
+    user = request.user if request.user.is_authenticated else None
+    recent_purchases = []
+    if user:
+        orders_qs = Order.objects.filter(user = user).order_by('-date')[:5]
+        for o in orders_qs:
+            items = Item.objects.filter(order = o).select_related('movie')
+            recent_purchases.append({
+                'order': o,
+                'items': items
+            })
+    
+
+    other_users = User.objects.none()
+    selected_other_user = None
+    other_user_purchases = []
+    if user and user.is_authenticated:
+        other_users = User.objects.exclude(id = user.id).order_by('username')[:50]
+        other_user_id = request.GET.get('other_user')
+        if other_user_id:
+            try:
+                selected_other_user = User.objects.get(id = int(other_user_id))
+                orders_qs = Order.objects.filter(user = selected_other_user).order_by('-date')[:5]
+                for o in orders_qs:
+                    items = Item.objects.filter(order = o).select_related('movie')
+                    other_user_purchases.append({
+                        'order': o,
+                        'items': items
+                    })
+            except (User.DoesNotExist, ValueError):
+                selected_other_user = None
+
+
+    selected_region = request.GET.get('region')
+    region_trending = []
+    region_states = {}
+    for rname, rdata in regions.items():
+        states = []
+        for sub in rdata.get('subregions', {}).values():
+            states.extend(sub)
+        region_states[rname] = states
+        
+    if selected_region and selected_region in region_states:
+        states = region_states[selected_region]
+        items_qs = Item.objects.filter(order__state__in=states).select_related('movie')
+        movie_counter = Counter()
+        for it in items_qs:
+            if it.movie:
+                movie_counter[it.movie.id] += it.quantity or 1
+    
+        top = movie_counter.most_common(10)
+        movie_ids = [m_id for m_id, _ in top]
+        movies = Movie.objects.filter(id__in = movie_ids)
+
+        movies_by_id = {m.id: m for m in movies}
+        for m_id, count in top:
+            m = movies_by_id.get(m_id)
+            if m:
+                region_trending.append({
+                    'movie': m,
+                    'count': count
+                })
     
     template_data = {
         'title': 'US Movie Trends Map',
-        'regions': regions
+        'regions': regions,
+        'recent_purchases': recent_purchases,
+        'other_users': other_users,
+        'selected_other_user': selected_other_user,
+        'other_user_purchases': other_user_purchases,
+        'selected_region': selected_region,
+        'region_trending': region_trending,
+        'region_states': region_states,
     }
-    
-    return render(request, 'trending/us_map.html', {'template_data': template_data})
 
+    return render(request, 'trending/us_map.html', {'template_data': template_data})
 
 
 @login_required
