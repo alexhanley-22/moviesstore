@@ -1,6 +1,10 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 from cart.models import Order
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from cart.models import Order  # adjust if your Order model is elsewhere
+from collections import defaultdict
 
 def us_trending_map(request):
     """Display US map with location services and regional data"""
@@ -47,18 +51,31 @@ def us_trending_map(request):
 
 
 
+@login_required
+@login_required
 def order_locations_api(request):
-    """Return recent orders with location data for map plotting"""
-    orders = Order.objects.exclude(latitude=None).order_by('-date')[:100]
-    data = [
-        {
-            'lat': o.latitude,
-            'lng': o.longitude,
-            'state': o.state,
-            'user': o.user.username,
-            'total': o.total,
-            'date': o.date.strftime('%Y-%m-%d %H:%M')
-        }
-        for o in orders
-    ]
+    user = request.user
+    orders = Order.objects.filter(user=user)  # only show the logged-in user's orders
+
+    location_groups = {}
+    for o in orders:
+        if o.latitude and o.longitude:  # ✅ correct field names
+            key = (round(o.latitude, 3), round(o.longitude, 3), o.state)
+            if key not in location_groups:
+                location_groups[key] = []
+            location_groups[key].append({
+                'total': float(o.total),
+                'date': o.date.strftime('%Y-%m-%d %H:%M')
+            })
+
+    data = []
+    for (lat, lng, state), order_list in location_groups.items():
+        data.append({
+            'lat': lat,
+            'lng': lng,
+            'state': state,
+            'count': len(order_list),
+            'orders': order_list
+        })
+
     return JsonResponse(data, safe=False)
